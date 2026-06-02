@@ -571,7 +571,7 @@ async function loadSets() {
   try {
     const res = await fetch('https://api.pokemontcg.io/v2/sets?orderBy=-releaseDate&pageSize=250');
     const data = await res.json();
-    allSets = data.data.map(s => s.name);
+    allSets = data.data.map(s => ({ name: s.name, logo: s.images?.logo || '' }));
   } catch(e) { allSets = []; }
 }
 
@@ -582,7 +582,7 @@ function onNameInput(val) {
   autocompleteTimeout = setTimeout(async () => {
     await loadSets();
     const q = val.toLowerCase();
-    const matches = allSets.filter(n => n.toLowerCase().includes(q)).slice(0, 8);
+    const matches = allSets.filter(s => s.name.toLowerCase().includes(q)).slice(0, 8);
     showDropdown(matches);
   }, 200);
 }
@@ -590,11 +590,12 @@ function onNameInput(val) {
 function showDropdown(matches) {
   const list = document.getElementById('autocomplete-list');
   if (!matches.length) { hideDropdown(); return; }
-  list.innerHTML = matches.map(m => `
-    <div onmousedown="selectSet('${m.replace(/'/g,"\\'")}')"
-         style="padding:12px 16px; cursor:pointer; font-size:14px; font-weight:600; border-bottom:1px solid rgba(0,0,0,0.06); color:#111;"
+  list.innerHTML = matches.map(s => `
+    <div onmousedown="selectSet('${s.name.replace(/'/g,"\\'")}')"
+         style="padding:10px 14px; cursor:pointer; display:flex; align-items:center; gap:12px; border-bottom:1px solid rgba(0,0,0,0.06);"
          onmouseover="this.style.background='#f5f5f5'" onmouseout="this.style.background='#fff'">
-      ${m}
+      ${s.logo ? `<img src="${s.logo}" style="height:32px; width:64px; object-fit:contain; flex-shrink:0;">` : ''}
+      <span style="font-size:13px; font-weight:700; color:#111;">${s.name}</span>
     </div>`).join('');
   list.style.display = 'block';
 }
@@ -608,6 +609,8 @@ function hideDropdown() {
 
 function selectSet(name) {
   document.getElementById('input-name').value = name;
+  const found = allSets.find(s => s.name === name);
+  document.getElementById('input-name').dataset.logo = found ? found.logo : '';
   hideDropdown();
 }
 
@@ -662,26 +665,36 @@ function renderCollection() {
     el.innerHTML = `<div class="empty-state"><div class="ei">${currentTab === 'card' ? '🃏' : '📦'}</div><div class="et">Nič tu nie je</div><div class="es">Pridaj položky cez tlačidlo +</div></div>`;
     return;
   }
-  const sorted = [...filtered].sort((a,b) => b.id - a.id);
-  el.innerHTML = sorted.map(i => `
+  // Grupovanie podľa názvu
+  const groups = {};
+  filtered.forEach(i => {
+    const key = i.name + '|' + i.type;
+    if (!groups[key]) groups[key] = { name: i.name, type: i.type, logo: i.logo || '', qty: 0, totalPrice: 0, ids: [] };
+    groups[key].qty += i.qty;
+    groups[key].totalPrice += i.price * i.qty;
+    groups[key].ids.push(i.id);
+    if (!groups[key].logo && i.logo) groups[key].logo = i.logo;
+  });
+  const sorted = Object.values(groups).sort((a,b) => a.name.localeCompare(b.name));
+  el.innerHTML = sorted.map(g => `
     <div class="col-item-card">
-      <div class="item-icon icon-${i.type}">${i.type === 'booster' ? '📦' : '🃏'}</div>
+      <div class="item-icon icon-${g.type}">${g.type === 'booster' && g.logo ? `<img src="${g.logo}" style="width:48px;height:28px;object-fit:contain;">` : (g.type === 'booster' ? '📦' : '🃏')}</div>
       <div class="item-info">
-        <div class="item-name">${i.name}</div>
-        <div class="item-meta"><span class="badge badge-${i.type}">${i.type === 'booster' ? 'Booster' : 'Karta'}</span> &nbsp;${i.qty} ks · ${fmt(i.price)}/ks</div>
+        <div class="item-name">${g.name}</div>
+        <div class="item-meta"><span class="badge badge-${g.type}">${g.type === 'booster' ? 'Booster' : 'Karta'}</span> &nbsp;${g.qty} ks · ø ${fmt(g.totalPrice/g.qty)}/ks</div>
       </div>
       <div class="col-item-right">
-        <div class="col-item-price">${fmt(i.price * i.qty)}</div>
-        <div class="col-item-qty">${i.qty} ks</div>
+        <div class="col-item-price">${fmt(g.totalPrice)}</div>
+        <div class="col-item-qty">${g.qty} ks</div>
       </div>
-      <button class="delete-btn" onclick="deleteItem(${i.id})">×</button>
+      <button class="delete-btn" onclick="deleteGroup(${JSON.stringify(g.ids)})">×</button>
     </div>
   `).join('');
 }
 
-function deleteItem(id) {
-  if (!confirm('Odstrániť z kolekcie?')) return;
-  items = items.filter(i => i.id !== id);
+function deleteGroup(ids) {
+  if (!confirm('Odstrániť všetky záznamy tejto sady?')) return;
+  items = items.filter(i => !ids.includes(i.id));
   save(); renderHome(); renderCollection();
 }
 
@@ -718,7 +731,7 @@ function addItem() {
     setTimeout(() => document.getElementById('input-name').classList.remove('input-error'), 1400);
     return;
   }
-  items.push({ id: Date.now(), type: currentType, name, qty, price, date: new Date().toISOString() });
+  items.push({ id: Date.now(), type: currentType, name, qty, price, date: new Date().toISOString(), logo: document.getElementById('input-name').dataset.logo || '' });
   save(); closeModal(); renderHome();
   if (currentScreen === 'collection') renderCollection();
 }
