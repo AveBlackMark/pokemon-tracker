@@ -420,6 +420,11 @@ body {
   -webkit-appearance: none;
 }
 .form-input:focus { border-color: var(--yellow); }
+.modal.card-theme { background: #f0f5ff; }
+.modal.card-theme .form-input:focus { border-color: var(--blue); }
+.modal.card-theme .type-btn.selected { border-color: var(--blue); color: var(--blue); background: rgba(74,144,217,0.08); }
+.modal.card-theme .submit-btn { background: linear-gradient(135deg, var(--blue), #7ab8f5); color: #fff; }
+.modal.card-theme .form-input:focus { border-color: var(--blue); outline: none; box-shadow: 0 0 0 3px rgba(74,144,217,0.15); }
 
 .type-toggle { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; }
 .type-btn {
@@ -427,8 +432,9 @@ body {
   border: 2px solid var(--border);
   background: var(--bg3); color: var(--muted);
   font-family: 'Nunito', sans-serif;
-  font-size: 14px; font-weight: 800;
+  font-size: 13px; font-weight: 800;
   cursor: pointer; transition: all 0.18s; text-align: center;
+  display: flex; flex-direction: column; align-items: center; gap: 2px;
 }
 .type-btn.selected { border-color: var(--yellow); color: var(--yellow); background: rgba(245,197,24,0.08); }
 
@@ -551,8 +557,14 @@ body {
     <div class="form-group">
       <label class="form-label">Typ</label>
       <div class="type-toggle">
-        <button class="type-btn selected" onclick="selectType('booster', this)">📦 Booster pack</button>
-        <button class="type-btn" onclick="selectType('card', this)">🃏 Karta</button>
+        <button class="type-btn selected" onclick="selectType('booster', this)">
+          <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" width="22" height="22" style="margin-bottom:4px;"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="1.8"/><path d="M2 12h20" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><circle cx="12" cy="12" r="3.5" fill="currentColor"/></svg>
+          Booster pack
+        </button>
+        <button class="type-btn" onclick="selectType('card', this)">
+          <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" width="22" height="22" style="margin-bottom:4px;"><rect x="2" y="5" width="9" height="13" rx="1.5" stroke="currentColor" stroke-width="1.8" transform="rotate(-8 6.5 11.5)"/><rect x="7.5" y="4.5" width="9" height="13" rx="1.5" fill="white" stroke="currentColor" stroke-width="1.8"/><rect x="13" y="5" width="9" height="13" rx="1.5" fill="white" stroke="currentColor" stroke-width="1.8" transform="rotate(8 17.5 11.5)"/></svg>
+          Karta
+        </button>
       </div>
     </div>
 
@@ -759,18 +771,34 @@ function updateRemovePreview() {
 
 function confirmRemove() {
   const qty = parseInt(document.getElementById('remove-qty').value) || 1;
-  const { name, type, groupItems } = removeGroupData;
-  let toRemove = qty;
-  // Uberáme od najnovších položiek
-  const sorted = [...groupItems].sort((a,b) => b.id - a.id);
-  for (const item of sorted) {
-    if (toRemove <= 0) break;
-    if (item.qty <= toRemove) {
-      toRemove -= item.qty;
-      items = items.filter(i => i.id !== item.id);
-    } else {
-      items = items.map(i => i.id === item.id ? {...i, qty: i.qty - toRemove} : i);
-      toRemove = 0;
+  const { name, type, groupItems, totalQty, avgPrice } = removeGroupData;
+  
+  if (qty >= totalQty) {
+    // Vymazať všetko
+    items = items.filter(i => !(i.name === name && i.type === type));
+  } else {
+    // Proporcionálne ubrat od každej položky
+    const ratio = (totalQty - qty) / totalQty;
+    let remaining = totalQty - qty;
+    const sorted = [...groupItems].sort((a,b) => b.id - a.id);
+    
+    for (let idx = 0; idx < sorted.length; idx++) {
+      const item = sorted[idx];
+      if (remaining <= 0) {
+        items = items.filter(i => i.id !== item.id);
+      } else if (idx === sorted.length - 1) {
+        // Posledná položka dostane zvyšok
+        items = items.map(i => i.id === item.id ? {...i, qty: remaining} : i);
+        remaining = 0;
+      } else {
+        const keep = Math.round(item.qty * ratio);
+        if (keep <= 0) {
+          items = items.filter(i => i.id !== item.id);
+        } else {
+          items = items.map(i => i.id === item.id ? {...i, qty: keep} : i);
+          remaining -= keep;
+        }
+      }
     }
   }
   save(); closeRemoveModal(); renderHome(); renderCollection();
@@ -800,12 +828,21 @@ function closeModal() {
   document.getElementById('input-qty').value = '1';
   document.getElementById('input-price').value = '';
   document.getElementById('input-name').classList.remove('input-error');
+  document.querySelector('#modal .modal').classList.remove('card-theme');
+  currentType = 'booster';
+  document.querySelectorAll('.type-btn').forEach((b,i) => { b.classList.toggle('selected', i===0); });
 }
 function handleOverlayClick(e) { if (e.target === document.getElementById('modal')) closeModal(); }
 function selectType(type, el) {
   currentType = type;
   document.querySelectorAll('.type-btn').forEach(b => b.classList.remove('selected'));
   el.classList.add('selected');
+  const modal = document.querySelector('#modal .modal');
+  if (type === 'card') {
+    modal.classList.add('card-theme');
+  } else {
+    modal.classList.remove('card-theme');
+  }
 }
 
 function addItem() {
