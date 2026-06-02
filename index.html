@@ -520,6 +520,29 @@ body {
 
 
 <!-- ══ ADD MODAL ══ -->
+<!-- Remove items modal -->
+<div class="modal-overlay" id="remove-modal" onclick="handleRemoveOverlayClick(event)">
+  <div class="modal">
+    <div class="modal-handle"></div>
+    <div class="modal-title" id="remove-modal-title">Ubrať kusy</div>
+    <div style="text-align:center; margin-bottom:16px;">
+      <div style="font-size:13px; color:#888; font-weight:600; margin-bottom:4px;">Aktuálne v kolekcii</div>
+      <div id="remove-current-info" style="font-size:15px; font-weight:800; color:#111;"></div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Koľko kusov ubrať?</label>
+      <div style="display:flex; align-items:center; gap:12px;">
+        <button onclick="changeRemoveQty(-1)" style="width:44px;height:44px;border-radius:50%;border:none;background:var(--yellow);font-size:22px;font-weight:900;cursor:pointer;">−</button>
+        <input class="form-input" id="remove-qty" type="number" value="1" min="1" style="text-align:center;font-size:20px;font-weight:800;" oninput="updateRemovePreview()">
+        <button onclick="changeRemoveQty(1)" style="width:44px;height:44px;border-radius:50%;border:none;background:var(--yellow);font-size:22px;font-weight:900;cursor:pointer;">+</button>
+      </div>
+    </div>
+    <div id="remove-preview" style="text-align:center; font-size:13px; color:#888; margin-bottom:16px;"></div>
+    <button class="submit-btn" onclick="confirmRemove()" style="background:var(--red);">Ubrať z kolekcie</button>
+    <button onclick="closeRemoveModal()" style="width:100%;margin-top:10px;padding:12px;border:none;background:none;font-size:15px;font-weight:700;color:#888;cursor:pointer;">Zrušiť</button>
+  </div>
+</div>
+
 <div class="modal-overlay" id="modal" onclick="handleOverlayClick(event)">
   <div class="modal">
     <div class="modal-handle"></div>
@@ -677,7 +700,7 @@ function renderCollection() {
   });
   const sorted = Object.values(groups).sort((a,b) => a.name.localeCompare(b.name));
   el.innerHTML = sorted.map(g => `
-    <div class="col-item-card">
+    <div class="col-item-card" onclick="openRemoveModal('${g.name.replace(/'/g,"\\'")}', '${g.type}')" style="cursor:pointer;">
       <div class="item-icon icon-${g.type}">${g.type === 'booster' && g.logo ? `<img src="${g.logo}" style="width:48px;height:28px;object-fit:contain;">` : (g.type === 'booster' ? '📦' : '🃏')}</div>
       <div class="item-info">
         <div class="item-name">${g.name}</div>
@@ -687,7 +710,7 @@ function renderCollection() {
         <div class="col-item-price">${fmt(g.totalPrice)}</div>
         <div class="col-item-qty">${g.qty} ks</div>
       </div>
-      <button class="delete-btn" onclick="deleteGroup(${JSON.stringify(g.ids)})">×</button>
+      <button class="delete-btn" onclick="event.stopPropagation(); deleteGroup(${JSON.stringify(g.ids)})">×</button>
     </div>
   `).join('');
 }
@@ -696,6 +719,70 @@ function deleteGroup(ids) {
   if (!confirm('Odstrániť všetky záznamy tejto sady?')) return;
   items = items.filter(i => !ids.includes(i.id));
   save(); renderHome(); renderCollection();
+}
+
+// ── REMOVE MODAL ──
+let removeGroupData = null;
+
+function openRemoveModal(name, type) {
+  const groupItems = items.filter(i => i.name === name && i.type === type);
+  const totalQty = groupItems.reduce((s,i) => s + i.qty, 0);
+  const totalPrice = groupItems.reduce((s,i) => s + i.price * i.qty, 0);
+  const avgPrice = totalPrice / totalQty;
+  removeGroupData = { name, type, totalQty, totalPrice, avgPrice, groupItems };
+  document.getElementById('remove-modal-title').textContent = name;
+  document.getElementById('remove-current-info').textContent = `${totalQty} ks · celkom ${fmt(totalPrice)} · ø ${fmt(avgPrice)}/ks`;
+  document.getElementById('remove-qty').value = 1;
+  document.getElementById('remove-qty').max = totalQty;
+  updateRemovePreview();
+  document.getElementById('remove-modal').classList.add('open');
+}
+
+function changeRemoveQty(delta) {
+  const input = document.getElementById('remove-qty');
+  const val = Math.min(Math.max(1, parseInt(input.value) + delta), removeGroupData.totalQty);
+  input.value = val;
+  updateRemovePreview();
+}
+
+function updateRemovePreview() {
+  if (!removeGroupData) return;
+  const qty = parseInt(document.getElementById('remove-qty').value) || 1;
+  const remaining = removeGroupData.totalQty - qty;
+  const removedVal = qty * removeGroupData.avgPrice;
+  const remainingVal = removeGroupData.totalPrice - removedVal;
+  document.getElementById('remove-preview').innerHTML =
+    remaining > 0
+      ? `Zostane: <strong>${remaining} ks · ${fmt(remainingVal)}</strong>`
+      : `<span style="color:var(--red)">Vymaže sa celá sada!</span>`;
+}
+
+function confirmRemove() {
+  const qty = parseInt(document.getElementById('remove-qty').value) || 1;
+  const { name, type, groupItems } = removeGroupData;
+  let toRemove = qty;
+  // Uberáme od najnovších položiek
+  const sorted = [...groupItems].sort((a,b) => b.id - a.id);
+  for (const item of sorted) {
+    if (toRemove <= 0) break;
+    if (item.qty <= toRemove) {
+      toRemove -= item.qty;
+      items = items.filter(i => i.id !== item.id);
+    } else {
+      items = items.map(i => i.id === item.id ? {...i, qty: i.qty - toRemove} : i);
+      toRemove = 0;
+    }
+  }
+  save(); closeRemoveModal(); renderHome(); renderCollection();
+}
+
+function closeRemoveModal() {
+  document.getElementById('remove-modal').classList.remove('open');
+  removeGroupData = null;
+}
+
+function handleRemoveOverlayClick(e) {
+  if (e.target === document.getElementById('remove-modal')) closeRemoveModal();
 }
 
 function switchTab(tab, el) {
