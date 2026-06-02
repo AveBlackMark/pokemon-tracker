@@ -526,6 +526,13 @@ body {
 
 
 <!-- ══ ADD MODAL ══ -->
+<!-- Image zoom overlay -->
+<div id="image-zoom-overlay" onclick="closeImageZoom()" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.85); z-index:900; align-items:center; justify-content:center; flex-direction:column; gap:16px;">
+  <img id="image-zoom-img" src="" style="max-height:66vh; max-width:90vw; object-fit:contain; border-radius:12px; box-shadow:0 20px 60px rgba(0,0,0,0.5);">
+  <div id="image-zoom-name" style="color:#fff; font-size:16px; font-weight:800; text-align:center; padding:0 20px;"></div>
+  <div style="color:rgba(255,255,255,0.5); font-size:13px;">Klepni pre zatvorenie</div>
+</div>
+
 <!-- Remove items modal -->
 <div class="modal-overlay" id="remove-modal" onclick="handleRemoveOverlayClick(event)">
   <div class="modal">
@@ -746,7 +753,9 @@ function renderCollection() {
   const sorted = Object.values(groups).sort((a,b) => a.name.localeCompare(b.name));
   el.innerHTML = sorted.map(g => `
     <div class="col-item-card" onclick="openRemoveModal('${g.name.replace(/'/g,"\\'")}', '${g.type}')" style="cursor:pointer;">
-      <div class="item-icon icon-${g.type}">${g.logo ? `<img src="${g.logo}" style="height:${g.type==='card'?'48px':'28px'}; width:${g.type==='card'?'34px':'64px'}; object-fit:contain; border-radius:${g.type==='card'?'3px':'0'};">` : (g.type === 'booster' ? '📦' : '🃏')}</div>
+      <div class="item-icon icon-${g.type}" onclick="${g.logo ? `event.stopPropagation(); openImageZoom('${g.logo.replace(/'/g,"\\'")}', '${g.name.replace(/'/g,"\\'")}')` : ''}">
+        ${g.logo ? `<img src="${g.logo}" style="height:${g.type==='card'?'48px':'28px'}; width:${g.type==='card'?'34px':'64px'}; object-fit:contain; border-radius:${g.type==='card'?'3px':'0'}; ${g.logo ? 'cursor:zoom-in;' : ''}">` : (g.type === 'booster' ? '📦' : '🃏')}
+      </div>
       <div class="item-info">
         <div class="item-name">${g.name}</div>
         <div class="item-meta"><span class="badge badge-${g.type}">${g.type === 'booster' ? 'Booster' : 'Karta'}</span> &nbsp;${g.qty} ks · ø ${fmt(g.totalPrice/g.qty)}/ks</div>
@@ -758,6 +767,17 @@ function renderCollection() {
       <button class="delete-btn" onclick="event.stopPropagation(); deleteGroup(${JSON.stringify(g.ids)})">×</button>
     </div>
   `).join('');
+}
+
+function openImageZoom(src, name) {
+  const overlay = document.getElementById('image-zoom-overlay');
+  document.getElementById('image-zoom-img').src = src;
+  document.getElementById('image-zoom-name').textContent = name;
+  overlay.style.display = 'flex';
+}
+
+function closeImageZoom() {
+  document.getElementById('image-zoom-overlay').style.display = 'none';
 }
 
 function deleteGroup(ids) {
