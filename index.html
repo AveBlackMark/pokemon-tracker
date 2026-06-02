@@ -611,27 +611,41 @@ async function loadSets() {
 }
 
 function onNameInput(val) {
-  if (currentType !== 'booster') return;
   clearTimeout(autocompleteTimeout);
   if (!val || val.length < 2) { hideDropdown(); return; }
   autocompleteTimeout = setTimeout(async () => {
-    await loadSets();
-    const q = val.toLowerCase();
-    const matches = allSets.filter(s => s.name.toLowerCase().includes(q)).slice(0, 8);
-    showDropdown(matches);
-  }, 200);
+    if (currentType === 'booster') {
+      await loadSets();
+      const q = val.toLowerCase();
+      const matches = allSets.filter(s => s.name.toLowerCase().includes(q)).slice(0, 8);
+      showDropdown(matches.map(s => ({ name: s.name, image: s.logo, type: 'set' })));
+    } else {
+      // Hľadáme karty
+      try {
+        const res = await fetch(`https://api.pokemontcg.io/v2/cards?q=name:${encodeURIComponent(val+'*')}&pageSize=8&select=id,name,images`);
+        const data = await res.json();
+        const cards = (data.data || []).map(c => ({ name: c.name, image: c.images?.small || '', type: 'card' }));
+        showDropdown(cards);
+      } catch(e) { hideDropdown(); }
+    }
+  }, 300);
 }
 
 function showDropdown(matches) {
   const list = document.getElementById('autocomplete-list');
   if (!matches.length) { hideDropdown(); return; }
-  list.innerHTML = matches.map(s => `
-    <div onmousedown="selectSet('${s.name.replace(/'/g,"\\'")}')"
+  list.innerHTML = matches.map(s => {
+    const safeName = s.name.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+    const safeImg = (s.image||'').replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+    const isCard = s.type === 'card';
+    return `
+    <div onmousedown="selectSet('${safeName}','${safeImg}')"
          style="padding:10px 14px; cursor:pointer; display:flex; align-items:center; gap:12px; border-bottom:1px solid rgba(0,0,0,0.06);"
          onmouseover="this.style.background='#f5f5f5'" onmouseout="this.style.background='#fff'">
-      ${s.logo ? `<img src="${s.logo}" style="height:32px; width:64px; object-fit:contain; flex-shrink:0;">` : ''}
+      ${s.image ? `<img src="${s.image}" style="height:${isCard?'44px':'28px'}; width:${isCard?'31px':'64px'}; object-fit:contain; flex-shrink:0; border-radius:${isCard?'3px':'0'};">` : ''}
       <span style="font-size:13px; font-weight:700; color:#111;">${s.name}</span>
-    </div>`).join('');
+    </div>`;
+  }).join('');
   list.style.display = 'block';
 }
 
@@ -642,10 +656,9 @@ function hideDropdown() {
   }, 150);
 }
 
-function selectSet(name) {
+function selectSet(name, image) {
   document.getElementById('input-name').value = name;
-  const found = allSets.find(s => s.name === name);
-  document.getElementById('input-name').dataset.logo = found ? found.logo : '';
+  document.getElementById('input-name').dataset.logo = image || '';
   hideDropdown();
 }
 
@@ -713,7 +726,7 @@ function renderCollection() {
   const sorted = Object.values(groups).sort((a,b) => a.name.localeCompare(b.name));
   el.innerHTML = sorted.map(g => `
     <div class="col-item-card" onclick="openRemoveModal('${g.name.replace(/'/g,"\\'")}', '${g.type}')" style="cursor:pointer;">
-      <div class="item-icon icon-${g.type}">${g.type === 'booster' && g.logo ? `<img src="${g.logo}" style="width:48px;height:28px;object-fit:contain;">` : (g.type === 'booster' ? '📦' : '🃏')}</div>
+      <div class="item-icon icon-${g.type}">${g.logo ? `<img src="${g.logo}" style="height:${g.type==='card'?'48px':'28px'}; width:${g.type==='card'?'34px':'64px'}; object-fit:contain; border-radius:${g.type==='card'?'3px':'0'};">` : (g.type === 'booster' ? '📦' : '🃏')}</div>
       <div class="item-info">
         <div class="item-name">${g.name}</div>
         <div class="item-meta"><span class="badge badge-${g.type}">${g.type === 'booster' ? 'Booster' : 'Karta'}</span> &nbsp;${g.qty} ks · ø ${fmt(g.totalPrice/g.qty)}/ks</div>
@@ -772,34 +785,24 @@ function updateRemovePreview() {
 function confirmRemove() {
   const qty = parseInt(document.getElementById('remove-qty').value) || 1;
   const { name, type, groupItems, totalQty, avgPrice } = removeGroupData;
-  
+
   if (qty >= totalQty) {
-    // Vymazať všetko
     items = items.filter(i => !(i.name === name && i.type === type));
   } else {
-    // Proporcionálne ubrat od každej položky
-    const ratio = (totalQty - qty) / totalQty;
-    let remaining = totalQty - qty;
-    const sorted = [...groupItems].sort((a,b) => b.id - a.id);
-    
-    for (let idx = 0; idx < sorted.length; idx++) {
-      const item = sorted[idx];
-      if (remaining <= 0) {
-        items = items.filter(i => i.id !== item.id);
-      } else if (idx === sorted.length - 1) {
-        // Posledná položka dostane zvyšok
-        items = items.map(i => i.id === item.id ? {...i, qty: remaining} : i);
-        remaining = 0;
-      } else {
-        const keep = Math.round(item.qty * ratio);
-        if (keep <= 0) {
-          items = items.filter(i => i.id !== item.id);
-        } else {
-          items = items.map(i => i.id === item.id ? {...i, qty: keep} : i);
-          remaining -= keep;
-        }
-      }
-    }
+    // Vymazeme vsetky polozky tejto skupiny a pridame novu s korektnou hodnotou
+    items = items.filter(i => !(i.name === name && i.type === type));
+    const remainingQty = totalQty - qty;
+    const remainingTotal = remainingQty * avgPrice;
+    const logo = groupItems.find(i => i.logo)?.logo || '';
+    items.push({
+      id: Date.now(),
+      type,
+      name,
+      qty: remainingQty,
+      price: avgPrice,
+      date: new Date().toISOString(),
+      logo
+    });
   }
   save(); closeRemoveModal(); renderHome(); renderCollection();
 }
