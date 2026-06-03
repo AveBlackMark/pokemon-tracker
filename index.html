@@ -522,7 +522,31 @@ body {
   </button>
 </nav>
 
-<!-- FAB -->
+<!-- ══ STATS SCREEN ══ -->
+<div id="screen-stats" class="screen">
+  <div class="page-header">
+    <div class="page-title">Štatistiky</div>
+  </div>
+  <div style="padding:16px; display:flex; flex-direction:column; gap:16px; padding-bottom:100px;">
+    <!-- Súhrn -->
+    <div style="background:#fff; border-radius:20px; padding:20px; box-shadow:0 2px 12px rgba(0,0,0,0.07);">
+      <div style="font-size:13px; font-weight:700; color:#888; text-transform:uppercase; letter-spacing:.5px; margin-bottom:14px;">Súhrn kolekcie</div>
+      <div id="stats-summary" style="display:grid; grid-template-columns:1fr 1fr; gap:12px;"></div>
+    </div>
+    <!-- Trhové ceny -->
+    <div style="background:#fff; border-radius:20px; padding:20px; box-shadow:0 2px 12px rgba(0,0,0,0.07);">
+      <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:14px;">
+        <div style="font-size:13px; font-weight:700; color:#888; text-transform:uppercase; letter-spacing:.5px;">Trhové ceny (CM Low)</div>
+        <button onclick="fetchMarketPrices()" id="refresh-prices-btn" style="background:var(--yellow);border:none;border-radius:10px;padding:6px 12px;font-size:12px;font-weight:800;cursor:pointer;color:#111;">↻ Načítať</button>
+      </div>
+      <div id="market-prices-list">
+        <div style="text-align:center; color:#aaa; font-size:14px; padding:20px 0;">Klikni "Načítať" pre trhové ceny</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+
 
 
 <!-- ══ ADD MODAL ══ -->
@@ -618,7 +642,7 @@ async function loadSets() {
   try {
     const res = await fetch('https://api.pokemontcg.io/v2/sets?orderBy=-releaseDate&pageSize=250');
     const data = await res.json();
-    allSets = data.data.map(s => ({ name: s.name, logo: s.images?.logo || '' }));
+    allSets = data.data.map(s => ({ id: s.id, name: s.name, logo: s.images?.logo || '' }));
   } catch(e) { allSets = []; }
 }
 
@@ -630,7 +654,7 @@ function onNameInput(val) {
       await loadSets();
       const q = val.toLowerCase();
       const matches = allSets.filter(s => s.name.toLowerCase().includes(q)).slice(0, 8);
-      showDropdown(matches.map(s => ({ name: s.name, image: s.logo, type: 'set' })));
+      showDropdown(matches.map(s => ({ id: s.id, name: s.name, image: s.logo, type: 'set' })));
     } else {
       // Hľadáme karty
       try {
@@ -646,7 +670,9 @@ function onNameInput(val) {
           image: c.images?.small || '',
           type: 'card',
           set: c.set?.name || '',
-          number: c.number || ''
+          setId: c.set?.id || '',
+          number: c.number || '',
+          cardId: c.id || ''
         }));
         showDropdown(cards);
       } catch(e) { hideDropdown(); }
@@ -660,10 +686,12 @@ function showDropdown(matches) {
   list.innerHTML = matches.map(s => {
     const safeName = s.name.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
     const safeImg = (s.image||'').replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+    const safeId = (s.id || s.cardId || '').replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+    const safeSetId = (s.setId || '').replace(/\\/g,'\\\\').replace(/'/g,"\\'");
     const isCard = s.type === 'card';
     const subtitle = isCard && s.set ? `<span style="font-size:11px;color:#888;font-weight:600;">${s.set}${s.number ? ' · #'+s.number : ''}</span>` : '';
     return `
-    <div onmousedown="selectSet('${safeName}','${safeImg}')"
+    <div onmousedown="selectSet('${safeName}','${safeImg}','${safeId}','${safeSetId}')"
          style="padding:10px 14px; cursor:pointer; display:flex; align-items:center; gap:12px; border-bottom:1px solid rgba(0,0,0,0.06);"
          onmouseover="this.style.background='#f5f5f5'" onmouseout="this.style.background='#fff'">
       ${s.image ? `<img src="${s.image}" style="height:${isCard?'44px':'28px'}; width:${isCard?'31px':'64px'}; object-fit:contain; flex-shrink:0; border-radius:${isCard?'3px':'0'};">` : ''}
@@ -683,9 +711,12 @@ function hideDropdown() {
   }, 150);
 }
 
-function selectSet(name, image) {
-  document.getElementById('input-name').value = name;
-  document.getElementById('input-name').dataset.logo = image || '';
+function selectSet(name, image, id, setId) {
+  const inp = document.getElementById('input-name');
+  inp.value = name;
+  inp.dataset.logo = image || '';
+  inp.dataset.itemId = id || '';      // card id alebo set id
+  inp.dataset.setId = setId || '';    // set id pre kartu
   hideDropdown();
 }
 
@@ -707,6 +738,7 @@ function switchScreen(name) {
   currentScreen = name;
   if (name === 'home') renderHome();
   if (name === 'collection') renderCollection();
+  if (name === 'stats') renderStats();
   window.scrollTo(0, 0);
 }
 
@@ -907,9 +939,138 @@ function addItem() {
     setTimeout(() => document.getElementById('input-name').classList.remove('input-error'), 1400);
     return;
   }
-  items.push({ id: Date.now(), type: currentType, name, qty, price, date: new Date().toISOString(), logo: document.getElementById('input-name').dataset.logo || '' });
+  const inp = document.getElementById('input-name');
+  items.push({ id: Date.now(), type: currentType, name, qty, price, date: new Date().toISOString(), logo: inp.dataset.logo || '', itemId: inp.dataset.itemId || '', setId: inp.dataset.setId || '' });
   save(); closeModal(); renderHome();
   if (currentScreen === 'collection') renderCollection();
+}
+
+// ── STATS ──
+function renderStats() {
+  const total = items.reduce((s, i) => s + i.price * i.qty, 0);
+  const totalQty = items.reduce((s, i) => s + i.qty, 0);
+  const boosters = items.filter(i => i.type === 'booster');
+  const cards = items.filter(i => i.type === 'card');
+  const bVal = boosters.reduce((s, i) => s + i.price * i.qty, 0);
+  const cVal = cards.reduce((s, i) => s + i.price * i.qty, 0);
+  const bQty = boosters.reduce((s, i) => s + i.qty, 0);
+  const cQty = cards.reduce((s, i) => s + i.qty, 0);
+
+  const stat = (label, value) => `
+    <div style="background:#f8f9ff; border-radius:14px; padding:14px;">
+      <div style="font-size:11px; color:#888; font-weight:700; text-transform:uppercase; letter-spacing:.4px; margin-bottom:4px;">${label}</div>
+      <div style="font-size:18px; font-weight:900; color:#111;">${value}</div>
+    </div>`;
+
+  document.getElementById('stats-summary').innerHTML =
+    stat('Celková investícia', fmt(total)) +
+    stat('Počet položiek', totalQty + ' ks') +
+    stat('Boostery', fmt(bVal) + ' · ' + bQty + ' ks') +
+    stat('Karty', fmt(cVal) + ' · ' + cQty + ' ks');
+}
+
+const PPT_KEY = 'pokeprice_free_032f8ba40adb90f25685ef9f22c4785da323bb4a01f1bade';
+
+async function getUsdEurRate() {
+  try {
+    const res = await fetch('https://api.frankfurter.app/latest?from=USD&to=EUR');
+    if (!res.ok) return 0.92;
+    const data = await res.json();
+    return data?.rates?.EUR ?? 0.92;
+  } catch(e) { return 0.92; }
+}
+
+async function fetchMarketPrices() {
+  const btn = document.getElementById('refresh-prices-btn');
+  const list = document.getElementById('market-prices-list');
+  btn.textContent = '⏳ Načítavam...';
+  btn.disabled = true;
+
+  // Zoskupíme unikátne položky
+  const groups = {};
+  items.forEach(i => {
+    const key = i.name + '|' + i.type;
+    if (!groups[key]) groups[key] = { name: i.name, type: i.type, qty: 0, paid: 0, itemId: i.itemId || '', setId: i.setId || '' };
+    groups[key].qty += i.qty;
+    groups[key].paid += i.price * i.qty;
+  });
+
+  if (!Object.keys(groups).length) {
+    list.innerHTML = `<div style="text-align:center; color:#aaa; font-size:14px; padding:20px 0;">Žiadne položky v kolekcii</div>`;
+    btn.textContent = '↻ Načítať'; btn.disabled = false; return;
+  }
+
+  // Načítame EUR/USD kurz
+  list.innerHTML = `<div style="text-align:center; color:#aaa; font-size:13px; padding:10px 0;">Načítavam kurz USD/EUR...</div>`;
+  const eurRate = await getUsdEurRate();
+
+  const results = [];
+
+  for (const g of Object.values(groups)) {
+    try {
+      let marketPriceEur = null;
+      let priceSource = null;
+
+      if (g.type === 'booster' && g.itemId) {
+        // PokemonPriceTracker — sealed products podľa setId
+        const res = await fetch(
+          `https://www.pokemonpricetracker.com/api/v2/sealed-products?setId=${g.itemId}&sortBy=price`,
+          { headers: { 'Authorization': `Bearer ${PPT_KEY}` } }
+        );
+        if (res.ok) {
+          const data = await res.json();
+          // Hľadáme booster pack (nie box, nie ETB)
+          const products = data?.data || data?.products || data || [];
+          const booster = products.find(p => {
+            const n = (p.name || p.productName || '').toLowerCase();
+            return n.includes('booster pack') && !n.includes('box') && !n.includes('bundle');
+          }) || products[0];
+          if (booster) {
+            const usdPrice = booster.marketPrice ?? booster.market_price ?? booster.price ?? null;
+            if (usdPrice) {
+              marketPriceEur = usdPrice * eurRate;
+              priceSource = 'TCGPlayer';
+            }
+          }
+        }
+      } else if (g.type === 'card' && g.itemId) {
+        // TCGdex pre karty — CM Low
+        const res = await fetch(`https://api.tcgdex.net/v2/en/cards/${g.itemId}`);
+        if (res.ok) {
+          const data = await res.json();
+          const low = data?.variants?.normal?.low ?? data?.variants?.holo?.low ?? null;
+          if (low) { marketPriceEur = low; priceSource = 'Cardmarket'; }
+        }
+      }
+
+      results.push({ ...g, marketPriceEur, priceSource });
+    } catch(e) {
+      results.push({ ...g, marketPriceEur: null, priceSource: null });
+    }
+  }
+
+  btn.textContent = '↻ Načítať';
+  btn.disabled = false;
+
+  list.innerHTML = results.map(r => {
+    const paidPer = r.qty > 0 ? r.paid / r.qty : 0;
+    const hasPrice = r.marketPriceEur !== null && r.marketPriceEur !== undefined;
+    const diff = hasPrice ? (r.marketPriceEur - paidPer) : null;
+    const diffColor = diff === null ? '#888' : diff >= 0 ? '#4caf82' : '#e05252';
+    const diffSign = diff === null ? '' : diff >= 0 ? '+' : '';
+    const sourceLabel = r.priceSource ? `<span style="font-size:10px;color:#aaa;font-weight:600;">${r.priceSource}</span>` : '';
+    return `
+      <div style="display:flex; align-items:center; justify-content:space-between; padding:12px 0; border-bottom:1px solid rgba(0,0,0,0.06);">
+        <div style="flex:1; min-width:0;">
+          <div style="font-size:13px; font-weight:800; color:#111; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${r.name}</div>
+          <div style="font-size:11px; color:#888; font-weight:600; margin-top:2px;">${r.qty} ks · zaplatené: ${fmt(paidPer)}/ks · ${sourceLabel}</div>
+        </div>
+        <div style="text-align:right; flex-shrink:0; margin-left:12px;">
+          <div style="font-size:14px; font-weight:900; color:#111;">${hasPrice ? fmt(r.marketPriceEur) : '—'}</div>
+          <div style="font-size:11px; font-weight:700; color:${diffColor};">${diff !== null ? diffSign + fmt(diff) + '/ks' : '—'}</div>
+        </div>
+      </div>`;
+  }).join('') + `<div style="text-align:right; font-size:10px; color:#bbb; margin-top:8px;">kurz USD/EUR: ${eurRate.toFixed(4)}</div>`;
 }
 
 // Init
