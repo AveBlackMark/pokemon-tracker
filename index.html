@@ -1012,27 +1012,52 @@ async function fetchMarketPrices() {
       let priceSource = null;
 
       if (g.type === 'booster' && g.itemId) {
-        // PokemonPriceTracker — sealed products podľa setId
-        const res = await fetch(
-          `https://www.pokemonpricetracker.com/api/v2/sealed-products?setId=${g.itemId}&sortBy=price`,
+        // Skúsime PPT /api/v2/sets/{id} — môže obsahovať sealed ceny
+        let found = false;
+
+        const r1 = await fetch(
+          `https://www.pokemonpricetracker.com/api/v2/sets/${g.itemId}`,
           { headers: { 'Authorization': `Bearer ${PPT_KEY}` } }
         );
-        if (res.ok) {
-          const data = await res.json();
-          // Hľadáme booster pack (nie box, nie ETB)
-          const products = data?.data || data?.products || data || [];
-          const booster = products.find(p => {
-            const n = (p.name || p.productName || '').toLowerCase();
-            return n.includes('booster pack') && !n.includes('box') && !n.includes('bundle');
-          }) || products[0];
-          if (booster) {
-            const usdPrice = booster.marketPrice ?? booster.market_price ?? booster.price ?? null;
-            if (usdPrice) {
-              marketPriceEur = usdPrice * eurRate;
-              priceSource = 'TCGPlayer';
+        if (r1.ok) {
+          const d1 = await r1.json();
+          const setData = d1?.data ?? d1;
+          // Hľadáme booster pack cenu v rôznych možných štruktúrach
+          const bp = setData?.sealedProducts?.find?.(p => (p.name||'').toLowerCase().includes('booster pack'))
+                  || setData?.sealed?.find?.(p => (p.name||'').toLowerCase().includes('booster'))
+                  || null;
+          const usd = bp?.marketPrice ?? bp?.market_price ?? bp?.price
+                   ?? setData?.boosterPackPrice ?? setData?.packPrice ?? null;
+          if (usd) { marketPriceEur = usd * eurRate; priceSource = 'TCGPlayer'; found = true; }
+        }
+
+        // Fallback: PPT /api/v2/cards?search=<set name> booster pack
+        if (!found) {
+          const r2 = await fetch(
+            `https://www.pokemonpricetracker.com/api/v2/cards?search=${encodeURIComponent(g.name + ' booster pack')}&limit=5`,
+            { headers: { 'Authorization': `Bearer ${PPT_KEY}` } }
+          );
+          if (r2.ok) {
+            const d2 = await r2.json();
+            const cards = d2?.data ?? d2 ?? [];
+            // Hľadáme sealed produkt nie kartu
+            const sealed = Array.isArray(cards) ? cards.find(c =>
+              (c.name||'').toLowerCase().includes('booster') &&
+              (c.supertype||c.type||'').toLowerCase().includes('sealed')
+            ) : null;
+            if (sealed) {
+              const usd = sealed?.tcgplayer?.prices?.normal?.market
+                       ?? sealed?.marketPrice ?? null;
+              if (usd) { marketPriceEur = usd * eurRate; priceSource = 'TCGPlayer'; found = true; }
             }
           }
         }
+
+        // Fallback 2: pokemontcg.io set → TCGPlayer URL (len ako informácia)
+        if (!found) {
+          priceSource = null; marketPriceEur = null;
+        }
+
       } else if (g.type === 'card' && g.itemId) {
         // TCGdex pre karty — CM Low
         const res = await fetch(`https://api.tcgdex.net/v2/en/cards/${g.itemId}`);
@@ -1045,7 +1070,7 @@ async function fetchMarketPrices() {
 
       results.push({ ...g, marketPriceEur, priceSource });
     } catch(e) {
-      results.push({ ...g, marketPriceEur: null, priceSource: null });
+      results.push({ ...g, marketPriceEur: null, priceSource: null, err: e.message });
     }
   }
 
@@ -1063,7 +1088,7 @@ async function fetchMarketPrices() {
       <div style="display:flex; align-items:center; justify-content:space-between; padding:12px 0; border-bottom:1px solid rgba(0,0,0,0.06);">
         <div style="flex:1; min-width:0;">
           <div style="font-size:13px; font-weight:800; color:#111; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${r.name}</div>
-          <div style="font-size:11px; color:#888; font-weight:600; margin-top:2px;">${r.qty} ks · zaplatené: ${fmt(paidPer)}/ks · ${sourceLabel}</div>
+          <div style="font-size:11px; color:#888; font-weight:600; margin-top:2px;">${r.qty} ks · zaplatené: ${fmt(paidPer)}/ks · ${sourceLabel}${r.err ? `<span style="color:#e05252"> ERR: ${r.err}</span>` : r.itemId ? '' : '<span style="color:#e05252"> chýba ID — pridaj znova</span>'}</div>
         </div>
         <div style="text-align:right; flex-shrink:0; margin-left:12px;">
           <div style="font-size:14px; font-weight:900; color:#111;">${hasPrice ? fmt(r.marketPriceEur) : '—'}</div>
