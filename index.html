@@ -954,7 +954,11 @@ function switchTab(tab, el) {
 function openModal() { document.getElementById('modal').classList.add('open'); setTimeout(() => document.getElementById('input-name').focus(), 380); loadSets(); }
 function closeModal() {
   document.getElementById('modal').classList.remove('open');
-  document.getElementById('input-name').value = '';
+  const inp = document.getElementById('input-name');
+  inp.value = '';
+  inp.dataset.logo = '';
+  inp.dataset.itemId = '';
+  inp.dataset.setId = '';
   document.getElementById('input-qty').value = '1';
   document.getElementById('input-price').value = '';
   document.getElementById('input-card-set').value = '';
