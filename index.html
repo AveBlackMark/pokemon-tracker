@@ -169,7 +169,7 @@ body {
 }
 .split-card.boosters::before { background: linear-gradient(90deg, var(--yellow), var(--yellow2)); }
 .split-card.cards::before { background: linear-gradient(90deg, var(--blue), #7ab8f5); }
-.split-card.bundles::before { background: linear-gradient(90deg, #a855f7, #c084fc); }
+.split-card.bundles::before { background: linear-gradient(90deg, #9b7fd4, #b8a0e0); }
 .split-card.etbs::before { background: linear-gradient(90deg, #ef4444, #f87171); }
 
 .split-icon { font-size: 28px; margin-bottom: 10px; }
@@ -180,10 +180,11 @@ body {
   letter-spacing: 1px;
   margin-bottom: 6px;
   color: #444;
+  position: relative; z-index: 1;
 }
 .split-card.boosters .split-type { color: #b8860b; }
 .split-card.cards .split-type { color: #1a5fa8; }
-.split-card.bundles .split-type { color: #7e22ce; }
+.split-card.bundles .split-type { color: #7b5ea7; }
 .split-card.etbs .split-type { color: #b91c1c; }
 .split-amount {
   font-family: 'Bebas Neue', sans-serif;
@@ -191,12 +192,14 @@ body {
   letter-spacing: 1.5px;
   color: #111;
   line-height: 1;
+  position: relative; z-index: 1;
 }
 .split-count {
   font-size: 12px;
   color: #888;
   font-weight: 700;
   margin-top: 4px;
+  position: relative; z-index: 1;
 }
 
 /* Recent section */
@@ -340,6 +343,11 @@ body {
   text-align: center;
 }
 .tab.active { background: var(--yellow); color: #0a0c18; border-color: var(--yellow); }
+.tab[data-tab="all"].active    { background: #8fbc5a; border-color: #8fbc5a; color: #fff; }
+.tab[data-tab="booster"].active { background: var(--yellow); border-color: var(--yellow); color: #0a0c18; }
+.tab[data-tab="bundle"].active  { background: #9b7fd4; border-color: #9b7fd4; color: #fff; }
+.tab[data-tab="etb"].active     { background: #ef4444; border-color: #ef4444; color: #fff; }
+.tab[data-tab="card"].active    { background: var(--blue); border-color: var(--blue); color: #fff; }
 
 .collection-list { padding: 14px 22px 110px; }
 
@@ -369,7 +377,7 @@ body {
 }
 .badge-booster { background: rgba(245,197,24,0.15); color: var(--yellow); }
 .badge-card    { background: rgba(74,144,217,0.15); color: var(--blue); }
-.badge-bundle  { background: rgba(168,85,247,0.15); color: #a855f7; }
+.badge-bundle  { background: rgba(168,85,247,0.15); color: #9b7fd4; }
 .badge-etb     { background: rgba(239,68,68,0.15); color: #ef4444; }
 
 .empty-state {
@@ -430,10 +438,19 @@ body {
 }
 .form-input:focus { border-color: var(--yellow); }
 .modal.card-theme { background: #f0f5ff; }
-.modal.card-theme .form-input:focus { border-color: var(--blue); }
+.modal.card-theme .form-input:focus { border-color: var(--blue); outline: none; box-shadow: 0 0 0 3px rgba(74,144,217,0.15); }
 .modal.card-theme .type-btn.selected { border-color: var(--blue); color: var(--blue); background: rgba(74,144,217,0.08); }
 .modal.card-theme .submit-btn { background: linear-gradient(135deg, var(--blue), #7ab8f5); color: #fff; }
-.modal.card-theme .form-input:focus { border-color: var(--blue); outline: none; box-shadow: 0 0 0 3px rgba(74,144,217,0.15); }
+
+.modal.bundle-theme { background: #f5f0ff; }
+.modal.bundle-theme .form-input:focus { border-color: #9b7fd4; outline: none; box-shadow: 0 0 0 3px rgba(155,127,212,0.15); }
+.modal.bundle-theme .type-btn.selected { border-color: #9b7fd4; color: #9b7fd4; background: rgba(155,127,212,0.08); }
+.modal.bundle-theme .submit-btn { background: linear-gradient(135deg, #9b7fd4, #b8a0e0); color: #fff; }
+
+.modal.etb-theme { background: #fff0f0; }
+.modal.etb-theme .form-input:focus { border-color: #e05252; outline: none; box-shadow: 0 0 0 3px rgba(239,68,68,0.15); }
+.modal.etb-theme .type-btn.selected { border-color: #e05252; color: #e05252; background: rgba(239,68,68,0.08); }
+.modal.etb-theme .submit-btn { background: linear-gradient(135deg, #ef4444, #f87171); color: #fff; }
 
 .type-toggle { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; row-gap: 9px; }
 .type-btn {
@@ -489,21 +506,25 @@ body {
         <div class="split-type">Karty</div>
         <div class="split-amount" id="split-card-val">0,00€</div>
         <div class="split-count" id="split-card-cnt">0 ks</div>
+        <img src="empty-card.png" style="position:absolute;bottom:6px;right:8px;width:48px;height:48px;object-fit:contain;mix-blend-mode:multiply;opacity:0.7;z-index:0;">
       </div>
       <div class="split-card boosters">
         <div class="split-type">Booster packy</div>
         <div class="split-amount" id="split-booster-val">0,00€</div>
         <div class="split-count" id="split-booster-cnt">0 ks</div>
+        <img src="empty-booster.png" style="position:absolute;bottom:6px;right:8px;width:48px;height:48px;object-fit:contain;mix-blend-mode:multiply;opacity:0.7;z-index:0;">
       </div>
       <div class="split-card bundles">
         <div class="split-type">Booster Bundle</div>
         <div class="split-amount" id="split-bundle-val">0,00€</div>
         <div class="split-count" id="split-bundle-cnt">0 ks</div>
+        <img src="empty-bundle.png" style="position:absolute;bottom:6px;right:8px;width:48px;height:48px;object-fit:contain;mix-blend-mode:multiply;opacity:0.7;z-index:0;">
       </div>
       <div class="split-card etbs">
-        <div class="split-type">Elite Trainer Box</div>
+        <div class="split-type">Elite Trainer Boxy</div>
         <div class="split-amount" id="split-etb-val">0,00€</div>
         <div class="split-count" id="split-etb-cnt">0 ks</div>
+        <img src="empty-etb.png" style="position:absolute;bottom:6px;right:8px;width:48px;height:48px;object-fit:contain;mix-blend-mode:multiply;opacity:0.7;z-index:0;">
       </div>
     </div>
 
@@ -520,11 +541,11 @@ body {
   <div class="page-header">
     <div class="page-title">Kolekcia</div>
     <div class="tabs">
-      <button class="tab active" onclick="switchTab('all', this)">Všetko</button>
-      <button class="tab" onclick="switchTab('booster', this)">Boostery</button>
-      <button class="tab" onclick="switchTab('bundle', this)">Bundly</button>
-      <button class="tab" onclick="switchTab('etb', this)">ETB</button>
-      <button class="tab" onclick="switchTab('card', this)">Karty</button>
+      <button class="tab active" data-tab="all" onclick="switchTab('all', this)">Všetko</button>
+      <button class="tab" data-tab="card" onclick="switchTab('card', this)">Karty</button>
+      <button class="tab" data-tab="booster" onclick="switchTab('booster', this)">Boostery</button>
+      <button class="tab" data-tab="bundle" onclick="switchTab('bundle', this)">Bundle</button>
+      <button class="tab" data-tab="etb" onclick="switchTab('etb', this)">ETB</button>
     </div>
   </div>
   <div class="collection-list" id="collection-list"></div>
@@ -599,7 +620,11 @@ body {
     <div class="form-group">
       <label class="form-label">Typ</label>
       <div class="type-toggle">
-        <button class="type-btn selected" onclick="selectType('booster', this)">
+        <button class="type-btn selected" onclick="selectType('card', this)">
+          <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" width="22" height="22" style="margin-bottom:4px;"><rect x="2" y="5" width="9" height="13" rx="1.5" stroke="currentColor" stroke-width="1.8" transform="rotate(-8 6.5 11.5)"/><rect x="7.5" y="4.5" width="9" height="13" rx="1.5" fill="white" stroke="currentColor" stroke-width="1.8"/><rect x="13" y="5" width="9" height="13" rx="1.5" fill="white" stroke="currentColor" stroke-width="1.8" transform="rotate(8 17.5 11.5)"/></svg>
+          Karta
+        </button>
+        <button class="type-btn" onclick="selectType('booster', this)">
           <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" width="22" height="22" style="margin-bottom:4px;"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="1.8"/><path d="M2 12h20" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><circle cx="12" cy="12" r="3.5" fill="currentColor"/></svg>
           Booster pack
         </button>
@@ -610,10 +635,6 @@ body {
         <button class="type-btn" onclick="selectType('etb', this)">
           <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" width="22" height="22" style="margin-bottom:4px;"><rect x="2" y="3" width="20" height="18" rx="2" stroke="currentColor" stroke-width="1.8"/><path d="M8 3v18M2 9h6M2 15h6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M14 8h4M14 12h4M14 16h4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
           Elite Trainer Box
-        </button>
-        <button class="type-btn" onclick="selectType('card', this)">
-          <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" width="22" height="22" style="margin-bottom:4px;"><rect x="2" y="5" width="9" height="13" rx="1.5" stroke="currentColor" stroke-width="1.8" transform="rotate(-8 6.5 11.5)"/><rect x="7.5" y="4.5" width="9" height="13" rx="1.5" fill="white" stroke="currentColor" stroke-width="1.8"/><rect x="13" y="5" width="9" height="13" rx="1.5" fill="white" stroke="currentColor" stroke-width="1.8" transform="rotate(8 17.5 11.5)"/></svg>
-          Karta
         </button>
       </div>
     </div>
@@ -648,7 +669,7 @@ body {
 <script>
 // ── DATA ──
 let items = JSON.parse(localStorage.getItem('poke_items') || '[]');
-let currentType = 'booster';
+let currentType = 'card';
 let currentTab = 'all';
 let currentScreen = 'home';
 
@@ -669,7 +690,7 @@ function onNameInput(val) {
   clearTimeout(autocompleteTimeout);
   if (!val || val.length < 2) { hideDropdown(); return; }
   autocompleteTimeout = setTimeout(async () => {
-    if (currentType === 'booster') {
+    if (currentType === 'booster' || currentType === 'bundle' || currentType === 'etb') {
       await loadSets();
       const q = val.toLowerCase();
       const matches = allSets.filter(s => s.name.toLowerCase().includes(q)).slice(0, 8);
@@ -742,7 +763,7 @@ function selectSet(name, image, id, setId) {
 function save() { localStorage.setItem('poke_items', JSON.stringify(items)); }
 
 // ── FORMAT ──
-function fmt(n) { return n.toFixed(2).replace('.', ',') + '€'; }
+function fmt(n) { return n.toFixed(1).replace('.', ',') + '€'; }
 
 // ── DATE ──
 
@@ -940,8 +961,11 @@ function closeModal() {
   document.getElementById('card-set-filter').style.display = 'none';
   document.getElementById('input-name').classList.remove('input-error');
   document.getElementById('input-name').placeholder = 'napr. Scarlet & Violet 151';
-  document.querySelector('#modal .modal').classList.remove('card-theme');
-  currentType = 'booster';
+  document.querySelector('#modal .modal').classList.remove('card-theme', 'bundle-theme', 'etb-theme');
+  document.querySelector('#modal .modal').classList.add('card-theme');
+  currentType = 'card';
+  document.getElementById('input-name').placeholder = 'napr. Charizard';
+  document.getElementById('card-set-filter').style.display = 'block';
   document.querySelectorAll('.type-btn').forEach((b,i) => { b.classList.toggle('selected', i===0); });
 }
 function handleOverlayClick(e) { if (e.target === document.getElementById('modal')) closeModal(); }
@@ -951,12 +975,20 @@ function selectType(type, el) {
   el.classList.add('selected');
   const modal = document.querySelector('#modal .modal');
   const cardSetFilter = document.getElementById('card-set-filter');
+  modal.classList.remove('card-theme', 'bundle-theme', 'etb-theme');
   if (type === 'card') {
     modal.classList.add('card-theme');
     cardSetFilter.style.display = 'block';
     document.getElementById('input-name').placeholder = 'napr. Charizard';
+  } else if (type === 'bundle') {
+    modal.classList.add('bundle-theme');
+    cardSetFilter.style.display = 'none';
+    document.getElementById('input-name').placeholder = 'napr. Scarlet & Violet 151';
+  } else if (type === 'etb') {
+    modal.classList.add('etb-theme');
+    cardSetFilter.style.display = 'none';
+    document.getElementById('input-name').placeholder = 'napr. Scarlet & Violet 151';
   } else {
-    modal.classList.remove('card-theme');
     cardSetFilter.style.display = 'none';
     document.getElementById('input-name').placeholder = 'napr. Scarlet & Violet 151';
   }
