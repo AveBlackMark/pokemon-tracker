@@ -169,6 +169,8 @@ body {
 }
 .split-card.boosters::before { background: linear-gradient(90deg, var(--yellow), var(--yellow2)); }
 .split-card.cards::before { background: linear-gradient(90deg, var(--blue), #7ab8f5); }
+.split-card.bundles::before { background: linear-gradient(90deg, #a855f7, #c084fc); }
+.split-card.etbs::before { background: linear-gradient(90deg, #ef4444, #f87171); }
 
 .split-icon { font-size: 28px; margin-bottom: 10px; }
 .split-type {
@@ -181,6 +183,8 @@ body {
 }
 .split-card.boosters .split-type { color: #b8860b; }
 .split-card.cards .split-type { color: #1a5fa8; }
+.split-card.bundles .split-type { color: #7e22ce; }
+.split-card.etbs .split-type { color: #b91c1c; }
 .split-amount {
   font-family: 'Bebas Neue', sans-serif;
   font-size: 22px;
@@ -227,6 +231,8 @@ body {
 }
 .icon-booster { background: rgba(245,197,24,0.15); }
 .icon-card    { background: rgba(74,144,217,0.15); }
+.icon-bundle  { background: rgba(168,85,247,0.15); }
+.icon-etb     { background: rgba(239,68,68,0.15); }
 .item-info { flex: 1; min-width: 0; }
 .item-name {
   font-size: 14px; font-weight: 800;
@@ -278,7 +284,7 @@ body {
   -webkit-backdrop-filter: blur(20px);
   border-top: 1px solid var(--border);
   display: grid;
-  grid-template-columns: 1fr 1fr 1fr;
+  grid-template-columns: 1fr 1fr;
   padding: 8px 0 28px;
   z-index: 400;
 }
@@ -362,6 +368,8 @@ body {
 }
 .badge-booster { background: rgba(245,197,24,0.15); color: var(--yellow); }
 .badge-card    { background: rgba(74,144,217,0.15); color: var(--blue); }
+.badge-bundle  { background: rgba(168,85,247,0.15); color: #a855f7; }
+.badge-etb     { background: rgba(239,68,68,0.15); color: #ef4444; }
 
 .empty-state {
   text-align: center; padding: 56px 20px; color: var(--muted);
@@ -426,7 +434,7 @@ body {
 .modal.card-theme .submit-btn { background: linear-gradient(135deg, var(--blue), #7ab8f5); color: #fff; }
 .modal.card-theme .form-input:focus { border-color: var(--blue); outline: none; box-shadow: 0 0 0 3px rgba(74,144,217,0.15); }
 
-.type-toggle { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; }
+.type-toggle { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; row-gap: 9px; }
 .type-btn {
   padding: 12px; border-radius: 13px;
   border: 2px solid var(--border);
@@ -475,7 +483,7 @@ body {
       
 
     <!-- Split: boosters vs cards -->
-    <div class="split-cards">
+    <div class="split-cards" style="grid-template-columns: 1fr 1fr;">
       <div class="split-card boosters">
         <div class="split-type">Booster packy</div>
         <div class="split-amount" id="split-booster-val">0,00€</div>
@@ -485,6 +493,16 @@ body {
         <div class="split-type">Karty</div>
         <div class="split-amount" id="split-card-val">0,00€</div>
         <div class="split-count" id="split-card-cnt">0 ks</div>
+      </div>
+      <div class="split-card bundles">
+        <div class="split-type">Booster Bundle</div>
+        <div class="split-amount" id="split-bundle-val">0,00€</div>
+        <div class="split-count" id="split-bundle-cnt">0 ks</div>
+      </div>
+      <div class="split-card etbs">
+        <div class="split-type">Elite Trainer Box</div>
+        <div class="split-amount" id="split-etb-val">0,00€</div>
+        <div class="split-count" id="split-etb-cnt">0 ks</div>
       </div>
     </div>
 
@@ -503,6 +521,8 @@ body {
     <div class="tabs">
       <button class="tab active" onclick="switchTab('all', this)">Všetko</button>
       <button class="tab" onclick="switchTab('booster', this)">Boostery</button>
+      <button class="tab" onclick="switchTab('bundle', this)">Bundly</button>
+      <button class="tab" onclick="switchTab('etb', this)">ETB</button>
       <button class="tab" onclick="switchTab('card', this)">Karty</button>
     </div>
   </div>
@@ -517,7 +537,7 @@ body {
   <button class="nav-btn" id="nav-collection" onclick="switchScreen('collection')">
     <span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" width="24" height="24"><rect x="2" y="5" width="9" height="13" rx="1.5" stroke="#4a90d9" stroke-width="1.8" transform="rotate(-8 6.5 11.5)"/><rect x="7.5" y="4.5" width="9" height="13" rx="1.5" fill="white" stroke="#4a90d9" stroke-width="1.8"/><rect x="13" y="5" width="9" height="13" rx="1.5" fill="white" stroke="#4a90d9" stroke-width="1.8" transform="rotate(8 17.5 11.5)"/></svg></span>Kolekcia
   </button>
-  <button class="nav-btn" id="nav-stats" onclick="switchScreen('stats')">
+  <button class="nav-btn" id="nav-stats" onclick="switchScreen('stats')" style="display:none;">
     <span class="nav-icon"><svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" width="24" height="24"><rect x="3" y="12" width="4" height="9" rx="1" fill="#f5c518" opacity="0.9"/><rect x="10" y="7" width="4" height="14" rx="1" fill="#f5c518" opacity="0.9"/><rect x="17" y="3" width="4" height="18" rx="1" fill="#f5c518" opacity="0.9"/></svg></span>Štatistiky
   </button>
 </nav>
@@ -532,16 +552,6 @@ body {
     <div style="background:#fff; border-radius:20px; padding:20px; box-shadow:0 2px 12px rgba(0,0,0,0.07);">
       <div style="font-size:13px; font-weight:700; color:#888; text-transform:uppercase; letter-spacing:.5px; margin-bottom:14px;">Súhrn kolekcie</div>
       <div id="stats-summary" style="display:grid; grid-template-columns:1fr 1fr; gap:12px;"></div>
-    </div>
-    <!-- Trhové ceny -->
-    <div style="background:#fff; border-radius:20px; padding:20px; box-shadow:0 2px 12px rgba(0,0,0,0.07);">
-      <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:14px;">
-        <div style="font-size:13px; font-weight:700; color:#888; text-transform:uppercase; letter-spacing:.5px;">Trhové ceny (CM Low)</div>
-        <button onclick="fetchMarketPrices()" id="refresh-prices-btn" style="background:var(--yellow);border:none;border-radius:10px;padding:6px 12px;font-size:12px;font-weight:800;cursor:pointer;color:#111;">↻ Načítať</button>
-      </div>
-      <div id="market-prices-list">
-        <div style="text-align:center; color:#aaa; font-size:14px; padding:20px 0;">Klikni "Načítať" pre trhové ceny</div>
-      </div>
     </div>
   </div>
 </div>
@@ -591,6 +601,14 @@ body {
         <button class="type-btn selected" onclick="selectType('booster', this)">
           <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" width="22" height="22" style="margin-bottom:4px;"><circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="1.8"/><path d="M2 12h20" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><circle cx="12" cy="12" r="3.5" fill="currentColor"/></svg>
           Booster pack
+        </button>
+        <button class="type-btn" onclick="selectType('bundle', this)">
+          <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" width="22" height="22" style="margin-bottom:4px;"><rect x="2" y="7" width="20" height="13" rx="2" stroke="currentColor" stroke-width="1.8"/><path d="M16 7V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v2" stroke="currentColor" stroke-width="1.8"/><path d="M12 12v4M10 14h4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+          Booster Bundle
+        </button>
+        <button class="type-btn" onclick="selectType('etb', this)">
+          <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" width="22" height="22" style="margin-bottom:4px;"><rect x="2" y="3" width="20" height="18" rx="2" stroke="currentColor" stroke-width="1.8"/><path d="M8 3v18M2 9h6M2 15h6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><path d="M14 8h4M14 12h4M14 16h4" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+          Elite Trainer Box
         </button>
         <button class="type-btn" onclick="selectType('card', this)">
           <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" width="22" height="22" style="margin-bottom:4px;"><rect x="2" y="5" width="9" height="13" rx="1.5" stroke="currentColor" stroke-width="1.8" transform="rotate(-8 6.5 11.5)"/><rect x="7.5" y="4.5" width="9" height="13" rx="1.5" fill="white" stroke="currentColor" stroke-width="1.8"/><rect x="13" y="5" width="9" height="13" rx="1.5" fill="white" stroke="currentColor" stroke-width="1.8" transform="rotate(8 17.5 11.5)"/></svg>
@@ -747,16 +765,26 @@ function renderHome() {
   const total = items.reduce((s, i) => s + i.price * i.qty, 0);
   const totalQty = items.reduce((s, i) => s + i.qty, 0);
   const boosters = items.filter(i => i.type === 'booster');
+  const bundles = items.filter(i => i.type === 'bundle');
+  const etbs = items.filter(i => i.type === 'etb');
   const cards = items.filter(i => i.type === 'card');
   const bVal = boosters.reduce((s, i) => s + i.price * i.qty, 0);
+  const bnVal = bundles.reduce((s, i) => s + i.price * i.qty, 0);
+  const eVal = etbs.reduce((s, i) => s + i.price * i.qty, 0);
   const cVal = cards.reduce((s, i) => s + i.price * i.qty, 0);
   const bQty = boosters.reduce((s, i) => s + i.qty, 0);
+  const bnQty = bundles.reduce((s, i) => s + i.qty, 0);
+  const eQty = etbs.reduce((s, i) => s + i.qty, 0);
   const cQty = cards.reduce((s, i) => s + i.qty, 0);
 
   document.getElementById('hero-total').textContent = fmt(total);
   document.getElementById('hero-sub').textContent = totalQty + ' ' + (totalQty === 1 ? 'položka' : totalQty < 5 ? 'položky' : 'položiek') + ' v kolekcii';
   document.getElementById('split-booster-val').textContent = fmt(bVal);
   document.getElementById('split-booster-cnt').textContent = bQty + ' ks';
+  document.getElementById('split-bundle-val').textContent = fmt(bnVal);
+  document.getElementById('split-bundle-cnt').textContent = bnQty + ' ks';
+  document.getElementById('split-etb-val').textContent = fmt(eVal);
+  document.getElementById('split-etb-cnt').textContent = eQty + ' ks';
   document.getElementById('split-card-val').textContent = fmt(cVal);
   document.getElementById('split-card-cnt').textContent = cQty + ' ks';
 
@@ -769,7 +797,12 @@ function renderCollection() {
   const filtered = currentTab === 'all' ? items : items.filter(i => i.type === currentTab);
   const el = document.getElementById('collection-list');
   if (filtered.length === 0) {
-    el.innerHTML = `<div class="empty-state"><div class="ei">${currentTab === 'card' ? '🃏' : '📦'}</div><div class="et">Nič tu nie je</div><div class="es">Pridaj položky cez tlačidlo +</div></div>`;
+    const emptyImgs = { booster: 'empty-booster.png', bundle: 'empty-bundle.png', etb: 'empty-etb.png', card: 'empty-card.png' };
+    const allImgs = `<img src="empty-booster.png" style="width:60px;height:60px;object-fit:contain;mix-blend-mode:multiply;"><img src="empty-bundle.png" style="width:60px;height:60px;object-fit:contain;mix-blend-mode:multiply;"><img src="empty-etb.png" style="width:60px;height:60px;object-fit:contain;mix-blend-mode:multiply;"><img src="empty-card.png" style="width:60px;height:60px;object-fit:contain;mix-blend-mode:multiply;">`;
+    const emptyContent = currentTab === 'all'
+      ? `<div style="display:flex;gap:8px;justify-content:center;align-items:flex-end;">${allImgs}</div>`
+      : `<img src="${emptyImgs[currentTab]}" style="width:80px;height:80px;object-fit:contain;mix-blend-mode:multiply;">`;
+    el.innerHTML = `<div class="empty-state"><div class="ei">${emptyContent}</div><div class="et">Nič tu nie je</div><div class="es">Pridaj položky cez tlačidlo +</div></div>`;
     return;
   }
   // Grupovanie podľa názvu
@@ -786,11 +819,11 @@ function renderCollection() {
   el.innerHTML = sorted.map(g => `
     <div class="col-item-card" onclick="openRemoveModal('${g.name.replace(/'/g,"\\'")}', '${g.type}')" style="cursor:pointer;">
       <div class="item-icon icon-${g.type}" onclick="${g.logo ? `event.stopPropagation(); openImageZoom('${g.logo.replace(/'/g,"\\'")}', '${g.name.replace(/'/g,"\\'")}')` : ''}">
-        ${g.logo ? `<img src="${g.logo}" style="height:${g.type==='card'?'48px':'28px'}; width:${g.type==='card'?'34px':'64px'}; object-fit:contain; border-radius:${g.type==='card'?'3px':'0'}; ${g.logo ? 'cursor:zoom-in;' : ''}">` : (g.type === 'booster' ? '📦' : '🃏')}
+        ${g.logo ? `<img src="${g.logo}" style="height:${g.type==='card'?'48px':'28px'}; width:${g.type==='card'?'34px':'64px'}; object-fit:contain; border-radius:${g.type==='card'?'3px':'0'}; cursor:zoom-in;">` : (g.type === 'card' ? '🃏' : g.type === 'bundle' ? '🎁' : g.type === 'etb' ? '🏆' : '📦')}
       </div>
       <div class="item-info">
         <div class="item-name">${g.name}</div>
-        <div class="item-meta"><span class="badge badge-${g.type}">${g.type === 'booster' ? 'Booster' : 'Karta'}</span> &nbsp;${g.qty} ks · ø ${fmt(g.totalPrice/g.qty)}/ks</div>
+        <div class="item-meta"><span class="badge badge-${g.type}">${g.type === 'booster' ? 'Booster' : g.type === 'bundle' ? 'Bundle' : g.type === 'etb' ? 'ETB' : 'Karta'}</span> &nbsp;${g.qty} ks · ø ${fmt(g.totalPrice/g.qty)}/ks</div>
       </div>
       <div class="col-item-right">
         <div class="col-item-price">${fmt(g.totalPrice)}</div>
@@ -969,134 +1002,6 @@ function renderStats() {
     stat('Karty', fmt(cVal) + ' · ' + cQty + ' ks');
 }
 
-const PPT_KEY = 'pokeprice_free_032f8ba40adb90f25685ef9f22c4785da323bb4a01f1bade';
-
-async function getUsdEurRate() {
-  try {
-    const res = await fetch('https://api.frankfurter.app/latest?from=USD&to=EUR');
-    if (!res.ok) return 0.92;
-    const data = await res.json();
-    return data?.rates?.EUR ?? 0.92;
-  } catch(e) { return 0.92; }
-}
-
-async function fetchMarketPrices() {
-  const btn = document.getElementById('refresh-prices-btn');
-  const list = document.getElementById('market-prices-list');
-  btn.textContent = '⏳ Načítavam...';
-  btn.disabled = true;
-
-  // Zoskupíme unikátne položky
-  const groups = {};
-  items.forEach(i => {
-    const key = i.name + '|' + i.type;
-    if (!groups[key]) groups[key] = { name: i.name, type: i.type, qty: 0, paid: 0, itemId: i.itemId || '', setId: i.setId || '' };
-    groups[key].qty += i.qty;
-    groups[key].paid += i.price * i.qty;
-  });
-
-  if (!Object.keys(groups).length) {
-    list.innerHTML = `<div style="text-align:center; color:#aaa; font-size:14px; padding:20px 0;">Žiadne položky v kolekcii</div>`;
-    btn.textContent = '↻ Načítať'; btn.disabled = false; return;
-  }
-
-  // Načítame EUR/USD kurz
-  list.innerHTML = `<div style="text-align:center; color:#aaa; font-size:13px; padding:10px 0;">Načítavam kurz USD/EUR...</div>`;
-  const eurRate = await getUsdEurRate();
-
-  const results = [];
-
-  for (const g of Object.values(groups)) {
-    try {
-      let marketPriceEur = null;
-      let priceSource = null;
-
-      if (g.type === 'booster' && g.itemId) {
-        // Skúsime PPT /api/v2/sets/{id} — môže obsahovať sealed ceny
-        let found = false;
-
-        const r1 = await fetch(
-          `https://www.pokemonpricetracker.com/api/v2/sets/${g.itemId}`,
-          { headers: { 'Authorization': `Bearer ${PPT_KEY}` } }
-        );
-        if (r1.ok) {
-          const d1 = await r1.json();
-          const setData = d1?.data ?? d1;
-          // Hľadáme booster pack cenu v rôznych možných štruktúrach
-          const bp = setData?.sealedProducts?.find?.(p => (p.name||'').toLowerCase().includes('booster pack'))
-                  || setData?.sealed?.find?.(p => (p.name||'').toLowerCase().includes('booster'))
-                  || null;
-          const usd = bp?.marketPrice ?? bp?.market_price ?? bp?.price
-                   ?? setData?.boosterPackPrice ?? setData?.packPrice ?? null;
-          if (usd) { marketPriceEur = usd * eurRate; priceSource = 'TCGPlayer'; found = true; }
-        }
-
-        // Fallback: PPT /api/v2/cards?search=<set name> booster pack
-        if (!found) {
-          const r2 = await fetch(
-            `https://www.pokemonpricetracker.com/api/v2/cards?search=${encodeURIComponent(g.name + ' booster pack')}&limit=5`,
-            { headers: { 'Authorization': `Bearer ${PPT_KEY}` } }
-          );
-          if (r2.ok) {
-            const d2 = await r2.json();
-            const cards = d2?.data ?? d2 ?? [];
-            // Hľadáme sealed produkt nie kartu
-            const sealed = Array.isArray(cards) ? cards.find(c =>
-              (c.name||'').toLowerCase().includes('booster') &&
-              (c.supertype||c.type||'').toLowerCase().includes('sealed')
-            ) : null;
-            if (sealed) {
-              const usd = sealed?.tcgplayer?.prices?.normal?.market
-                       ?? sealed?.marketPrice ?? null;
-              if (usd) { marketPriceEur = usd * eurRate; priceSource = 'TCGPlayer'; found = true; }
-            }
-          }
-        }
-
-        // Fallback 2: pokemontcg.io set → TCGPlayer URL (len ako informácia)
-        if (!found) {
-          priceSource = null; marketPriceEur = null;
-        }
-
-      } else if (g.type === 'card' && g.itemId) {
-        // TCGdex pre karty — CM Low
-        const res = await fetch(`https://api.tcgdex.net/v2/en/cards/${g.itemId}`);
-        if (res.ok) {
-          const data = await res.json();
-          const low = data?.variants?.normal?.low ?? data?.variants?.holo?.low ?? null;
-          if (low) { marketPriceEur = low; priceSource = 'Cardmarket'; }
-        }
-      }
-
-      results.push({ ...g, marketPriceEur, priceSource });
-    } catch(e) {
-      results.push({ ...g, marketPriceEur: null, priceSource: null, err: e.message });
-    }
-  }
-
-  btn.textContent = '↻ Načítať';
-  btn.disabled = false;
-
-  list.innerHTML = results.map(r => {
-    const paidPer = r.qty > 0 ? r.paid / r.qty : 0;
-    const hasPrice = r.marketPriceEur !== null && r.marketPriceEur !== undefined;
-    const diff = hasPrice ? (r.marketPriceEur - paidPer) : null;
-    const diffColor = diff === null ? '#888' : diff >= 0 ? '#4caf82' : '#e05252';
-    const diffSign = diff === null ? '' : diff >= 0 ? '+' : '';
-    const sourceLabel = r.priceSource ? `<span style="font-size:10px;color:#aaa;font-weight:600;">${r.priceSource}</span>` : '';
-    return `
-      <div style="display:flex; align-items:center; justify-content:space-between; padding:12px 0; border-bottom:1px solid rgba(0,0,0,0.06);">
-        <div style="flex:1; min-width:0;">
-          <div style="font-size:13px; font-weight:800; color:#111; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${r.name}</div>
-          <div style="font-size:11px; color:#888; font-weight:600; margin-top:2px;">${r.qty} ks · zaplatené: ${fmt(paidPer)}/ks · ${sourceLabel}${r.err ? `<span style="color:#e05252"> ERR: ${r.err}</span>` : r.itemId ? '' : '<span style="color:#e05252"> chýba ID — pridaj znova</span>'}</div>
-        </div>
-        <div style="text-align:right; flex-shrink:0; margin-left:12px;">
-          <div style="font-size:14px; font-weight:900; color:#111;">${hasPrice ? fmt(r.marketPriceEur) : '—'}</div>
-          <div style="font-size:11px; font-weight:700; color:${diffColor};">${diff !== null ? diffSign + fmt(diff) + '/ks' : '—'}</div>
-        </div>
-      </div>`;
-  }).join('') + `<div style="text-align:right; font-size:10px; color:#bbb; margin-top:8px;">kurz USD/EUR: ${eurRate.toFixed(4)}</div>`;
-}
 
 // Init
 renderHome();
