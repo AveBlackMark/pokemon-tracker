@@ -301,6 +301,7 @@ body {
   transition: color 0.15s;
 }
 .nav-btn.active { color: var(--yellow); }
+#nav-collection.active { color: var(--blue); }
 .nav-icon { font-size: 20px; line-height: 1; display: flex; align-items: center; justify-content: center; }
 .nav-icon svg { opacity: 0.4; transition: opacity 0.15s; }
 .nav-btn.active .nav-icon svg { opacity: 1; }
@@ -484,15 +485,15 @@ body {
 
     <!-- Split: boosters vs cards -->
     <div class="split-cards" style="grid-template-columns: 1fr 1fr;">
-      <div class="split-card boosters">
-        <div class="split-type">Booster packy</div>
-        <div class="split-amount" id="split-booster-val">0,00€</div>
-        <div class="split-count" id="split-booster-cnt">0 ks</div>
-      </div>
       <div class="split-card cards">
         <div class="split-type">Karty</div>
         <div class="split-amount" id="split-card-val">0,00€</div>
         <div class="split-count" id="split-card-cnt">0 ks</div>
+      </div>
+      <div class="split-card boosters">
+        <div class="split-type">Booster packy</div>
+        <div class="split-amount" id="split-booster-val">0,00€</div>
+        <div class="split-count" id="split-booster-cnt">0 ks</div>
       </div>
       <div class="split-card bundles">
         <div class="split-type">Booster Bundle</div>
